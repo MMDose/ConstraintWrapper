@@ -50,7 +50,9 @@ public extension UIView {
         parent.insetsLayoutMarginsFromSafeArea = false
         let parentMargins = respectSafeArea ? parent.safeAreaLayoutGuide : parent.layoutMarginsGuide
         let currentMargins = self.layoutMarginsGuide
-
+        
+        self.translatesAutoresizingMaskIntoConstraints = false
+        
         for side in sides {
             if let leftAnchorX = side.acnhorX(guid: currentMargins), let rightAnchorX = side.acnhorX(guid: parentMargins) {
                 let constantX: NSLayoutConstraint
@@ -81,16 +83,68 @@ public extension UIView {
 
         return constraints
     }
+    
+    @discardableResult
+    func addConstraint(sides: ViewSides, constraint: ConstraintMode, to layout: UILayoutGuide, respectSafeArea: Bool = false, respectInsetsLayout: Bool = false, activate: Bool = false) -> [ViewSides: NSLayoutConstraint] {
+        var constraints: [ViewSides: NSLayoutConstraint] = [:]
+        guard let parent = self.superview else {
+            return constraints
+        }
+        self.directionalLayoutMargins = .zero
+        parent.directionalLayoutMargins = .zero
+        self.insetsLayoutMarginsFromSafeArea = false
+        parent.insetsLayoutMarginsFromSafeArea = false
+        let parentMargins = layout
+        let currentMargins = self.layoutMarginsGuide
+        self.translatesAutoresizingMaskIntoConstraints = false
+
+        for side in sides {
+            if let leftAnchorX = side.acnhorX(guid: currentMargins), let rightAnchorX = side.acnhorX(guid: parentMargins) {
+                let constantX: NSLayoutConstraint
+                
+                if side == .trailing {
+                    constantX = constraint.constraint(left: rightAnchorX, right: leftAnchorX)
+                } else {
+                    constantX = constraint.constraint(left: leftAnchorX, right: rightAnchorX)
+                }
+                constraints[side] = constantX
+                constantX.isActive = activate
+            }
+            if let leftAnchorY = side.acnhorY(guid: currentMargins), let rightAnchorY = side.acnhorY(guid: parentMargins) {
+                let constantY: NSLayoutConstraint
+                
+                if side == .top {
+                    constantY = constraint.constraint(left: leftAnchorY, right: rightAnchorY)
+                } else {
+                    constantY = constraint.constraint(left: rightAnchorY, right: leftAnchorY)
+                }
+                constraints[side] = constantY
+                constantY.isActive = activate
+            }
+            if let leftDimension = side.dimension(guid: currentMargins) {
+                let constantX = constraint.dimension(layout: leftDimension)
+                
+                constraints[[side]] = constantX
+                constantX.isActive = activate
+            }
+        }
+
+        return constraints
+    }
 
     // swiftlint:disable line_length
     @discardableResult
     func addConstraint(sides: ViewSides, constraint: ConstraintMode, to view: ViewConstraint, respectSafeArea: Bool = false, directionalLayout: NSDirectionalEdgeInsets = .zero, respectInsetsLayout: Bool = false, activate: Bool = false) -> [ViewSides: NSLayoutConstraint] {
         var constraints: [ViewSides: NSLayoutConstraint] = [:]
+        
         guard sides.isCapable else {
             assertionFailure("Sides are not capable with each other.")
             return [:]
         }
+        
         var iterableOtherSides = view.side.makeIterator()
+        
+        self.translatesAutoresizingMaskIntoConstraints = false
 
         for side in sides {
             guard let nextElement = iterableOtherSides.next() else {
@@ -140,10 +194,13 @@ public extension UIView {
         }
         self.directionalLayoutMargins = .zero
         parent.directionalLayoutMargins = .zero
+        
         let parentMargins = respectSafeArea ? parent.safeAreaLayoutGuide : parent.layoutMarginsGuide
         let currentMargins = self.layoutMarginsGuide
+        
         self.insetsLayoutMarginsFromSafeArea = false
         parent.insetsLayoutMarginsFromSafeArea = false
+        self.translatesAutoresizingMaskIntoConstraints = false
 
         for side in sides {
             if let leftAnchorX = side.acnhorX(guid: currentMargins), let rightAnchorX = side.acnhorX(guid: parentMargins) {
